@@ -1,12 +1,16 @@
 import {
   token,
   administrationId,
+
+  verbose,
 } from "../argv.mjs";
 
 import fetch from "./cache.mjs";
 
 export default async function authorizedFetch( path, options = {} ) {
-  // console.log( path );
+  if ( verbose ) {
+    console.error( path );
+  }
 
   return fetch( `https://moneybird.com/api/v2/${ administrationId }/${ path }`, {
     ...options,

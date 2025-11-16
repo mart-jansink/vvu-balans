@@ -1,3 +1,7 @@
+import {
+  verbose,
+} from "../argv.mjs";
+
 const throttling = ( 5 * 60 * 1000 / 150 );
 
 export default async function retriedFetch( url, options ) {
@@ -16,7 +20,11 @@ export default async function retriedFetch( url, options ) {
   }
 
   const retryAfter = parseInt( response.headers.get( "retry-after" ), 10 );
-  console.log( new Date( retryAfter * 1000 ).toLocaleTimeString() );
+  if ( verbose ) {
+    console.log( `delayed until ${
+      new Date( retryAfter * 1000 ).toLocaleTimeString()
+    }` );
+  }
 
   return new Promise( ( resolve ) => {
     setTimeout(

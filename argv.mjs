@@ -10,6 +10,8 @@ export const {
 
     startMonth,
     endMonth,
+
+    verbose,
   },
 } = yargs( hideBin( process.argv ) )
   .option( "token", {
@@ -25,6 +27,10 @@ export const {
   .option( "end-month", {
     alias: "e",
     transform: parseInt,
+  } )
+  .option( "verbose", {
+    alias: "v",
+    boolean: true,
   } )
   .demandOption( [
     "token",

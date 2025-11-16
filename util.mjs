@@ -15,7 +15,7 @@ export const parseCents = function( value ) {
   return Math.round( parseFloat( value ) * 100 );
 };
 const formatCents = function( value ) {
-  return ( value / 100 ).toFixed( 2 );
+  return ( value / 100 ).toFixed( 2 ).replace( ".", "," );
 };
 
 const perPage = 100;
@@ -42,39 +42,61 @@ const sum = function( sum, amount ) {
   return ( sum + amount );
 }
 export const print = function( byLedgerAccount ) {
+  const ledgerAccountsByParent = new Map();
   let nameWidth = 0;
-  for ( const {
-    name,
-  } of byLedgerAccount.keys() ) {
-    nameWidth = Math.max( nameWidth, name.length );
+  for ( const [ ledgerAccount, amounts ] of byLedgerAccount ) {
+    if ( amounts.length === 0 ) {
+      continue;
+    }
+
+    const {
+      parent,
+    } = ledgerAccount;
+    if ( ledgerAccountsByParent.has( parent ) ) {
+      ledgerAccountsByParent.get( parent ).push( ledgerAccount );
+    }
+    else {
+      ledgerAccountsByParent.set( parent, [ ledgerAccount ] );
+    }
+
+    if ( ledgerAccount.name.startsWith( parent.name ) ) {
+      ledgerAccount.name = ledgerAccount.name.slice( parent.name.length + 1 );
+    }
+    nameWidth = Math.max( nameWidth, ledgerAccount.name.length, parent.name.length );
   }
 
   let totalAmount = 0;
   let totalOutstandingAmount = 0;
-  for ( const [ ledgerAccount, amounts ] of byLedgerAccount ) {
-    const amount = amounts.reduce( sum, 0 );
-    totalAmount += amount;
+  for ( const parent of Array.from( ledgerAccountsByParent.keys() ).sort( ( a, b ) => {
+    return a.name.localeCompare( b.name );
+  } ) ) {
+    console.log( `\n${ parent.name }` );
 
-    if ( Math.abs( Math.round( amount ) ) <= 99 ) {
-      // disregard any (cumulative) rounding errors
-      continue;
+    for ( const ledgerAccount of ledgerAccountsByParent.get( parent ) ) {
+      const amount = byLedgerAccount.get( ledgerAccount ).reduce( sum, 0 );
+      totalAmount += amount;
+
+      if ( Math.abs( Math.round( amount ) ) <= 99 ) {
+        // disregard any (cumulative) rounding errors
+        continue;
+      }
+
+      const outstandingAmount = byLedgerAccount.outstanding.get( ledgerAccount ).reduce( sum, 0 );
+      totalOutstandingAmount += outstandingAmount;
+
+      console.log( [
+        ledgerAccount.name.padEnd( nameWidth ),
+        formatCents( amount ).padStart( 8 ),
+
+        ( ( Math.abs( outstandingAmount ) > 99 )
+          ? formatCents( outstandingAmount ).padStart( 8 )
+          : ""
+        ),
+      ].join( "\t" ) );
     }
-
-    const outstandingAmount = byLedgerAccount.outstanding.get( ledgerAccount ).reduce( sum, 0 );
-    totalOutstandingAmount += outstandingAmount;
-
-    console.log( [
-      ledgerAccount.name.padEnd( nameWidth ),
-      formatCents( amount ).padStart( 8 ),
-
-      ( ( Math.abs( outstandingAmount ) > 99 )
-        ? formatCents( outstandingAmount ).padStart( 8 )
-        : ""
-      ),
-    ].join( "\t" ) );
   }
 
-  console.log( [
+  console.log( "\n", [
     "".padEnd( nameWidth ),
     formatCents( totalAmount ).padStart( 8 ),
     formatCents( totalOutstandingAmount ).padStart( 8 ),
