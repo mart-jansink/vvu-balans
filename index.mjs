@@ -33,6 +33,8 @@ const includeTax = function( {
   tax_rate_id,
   total_price_excl_tax_with_discount_base,
 } ) {
+  return parseCents( total_price_excl_tax_with_discount_base );
+
   const {
     percentage,
   } = taxRatesById.get( tax_rate_id );
@@ -278,6 +280,13 @@ const balanceLedgerAccounts = async function( current ) {
 
       case "Payment":
         return attributeAmounts( await fetchPayment( document_id ), amount );
+
+      case "VatDocument":
+        // TODO: figure out how to handle this
+        return [];
+
+      default:
+        throw entry;
     }
   };
 
